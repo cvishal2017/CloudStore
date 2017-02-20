@@ -1,0 +1,119 @@
+---
+default_locale: en
+locales: 
+  $ref: locales.yml
+name: "Cloud Store Application Deploy"
+description: "With this deployment, you use a sample to create an online store that consists of three microservices: a Catalog API, an Orders API, and a UI that calls both of the APIs. The toolchain is preconfigured for continuous delivery, source control, issue tracking, online editing.\n\nThe Catalog and Orders API are backed by a Cloudant store and Cleardb MySQL respectively. As part of deploying this application a no cost Cloudant and ClearDB MySQL service instance will be created. For more information and terms, see the [Bluemix catalog](/catalog/services/cloudant-nosql-db/).\n\nThis toolchain uses tools that are part of the Continuous Delivery service. \n\nTo get started, click **Create**."
+version: 0.2
+image: data:image/svg+xml;base64,$file(toolchain_new.svg?localize,base64)
+icon: data:image/svg+xml;base64,$file(icon.svg,base64)
+required:
+ - deploy
+ - github
+
+# Github repos
+catalog-api-repo:
+  service_id: githubpublic
+  parameters:
+    repo_name: "{{github.parameters.catalog-api-repo_name}}"
+    repo_url: "{{github.parameters.catalog-api-repo_url}}"
+    type: clone
+    has_issues: false
+  hidden: [form, description]
+
+orders-api-repo:
+  service_id: githubpublic
+  parameters:
+    repo_name: "{{github.parameters.orders-api-repo_name}}"
+    repo_url: "{{github.parameters.orders-api-repo_url}}"
+    type: clone
+    has_issues: false
+  hidden: [form, description]
+
+ui-repo:
+  service_id: githubpublic
+  parameters:
+    repo_name: "{{github.parameters.ui-repo_name}}"
+    repo_url: "{{github.parameters.ui-repo_url}}"
+    type: clone
+    has_issues: true
+  hidden: [form, description]
+
+# Pipelines
+ui-build:
+  service_id: pipeline
+  parameters:
+    name: "UI-{{name}}"
+    ui-pipeline: true
+    configuration:
+      content: $file(ui.pipeline.yml)
+      env:
+        UI_REPO: "ui-repo"
+        CF_APP_NAME: "{{deploy.parameters.ui-app-name}}"
+        DEV_SPACE_NAME: "{{deploy.parameters.dev-space}}"
+        DEV_ORG_NAME: "{{deploy.parameters.dev-organization}}"
+        DEV_REGION_ID: "{{deploy.parameters.dev-region}}"
+      execute: true
+    services: ["ui-repo"]
+  hidden: [form, description]
+
+catalog-api-build:
+  service_id: pipeline
+  parameters:
+    name: "Catalog-api-{{name}}"
+    configuration:
+      content: $file(catalog-api.pipeline.yml)
+      env:
+        CATALOG_API_REPO: "catalog-api-repo"
+        CF_APP_NAME: "{{deploy.parameters.catalog-app-name}}"
+        DEV_SPACE_NAME: "{{deploy.parameters.dev-space}}"
+        DEV_ORG_NAME: "{{deploy.parameters.dev-organization}}"
+        DEV_REGION_ID: "{{deploy.parameters.dev-region}}"
+      execute: true
+    services: ["catalog-api-repo"]
+  hidden: [form, description]
+
+orders-api-build:
+  service_id: pipeline
+  parameters:
+    name: "Orders-api-{{name}}"
+    configuration:
+      content: $file(order-api.pipeline.yml)
+      env:
+        ORDER_API_REPO: "orders-api-repo"
+        CF_APP_NAME: "{{deploy.parameters.orders-app-name}}"
+        DEV_SPACE_NAME: "{{deploy.parameters.dev-space}}"
+        DEV_ORG_NAME: "{{deploy.parameters.dev-organization}}"
+        DEV_REGION_ID: "{{deploy.parameters.dev-region}}"
+      execute: true
+    services: ["orders-api-repo"]
+  hidden: [form, description]
+
+
+#Web IDE
+webide:
+  service_id: orion
+
+#Deployment
+deploy:
+  schema:
+    $ref: deploy.json
+  service-category: pipeline
+  parameters:
+    dev-space: dev
+    orders-app-name: "{{orders-api-repo.parameters.repo_name}}"
+    catalog-app-name: "{{catalog-api-repo.parameters.repo_name}}"
+    ui-app-name: "{{ui-repo.parameters.repo_name}}"
+
+#Github
+github:
+  schema:
+    $ref: github.json
+  service-category: githubpublic
+  parameters:
+    catalog-api-repo_name: "Catalog-api-{{name}}"
+    catalog-api-repo_url: https://github.com/interconnect2017/Microservices-Catalog
+    orders-api-repo_name: "Orders-api-{{name}}"
+    orders-api-repo_url: https://github.com/interconnect2017/Microservices-Orders
+    ui-repo_name: "UI-{{name}}"
+    ui-repo_url: https://github.com/interconnect2017/Microservices-UI
