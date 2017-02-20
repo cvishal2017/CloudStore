@@ -1,4 +1,4 @@
-# CloudStore#Cloud Store application for Interconnect 2017
+#Cloud Store application for Interconnect 2017
 
 Get started with this sample, which is an online store that consists of three microservices: a Catalog API, an Orders API, and a UI that calls both of the APIs. The sample includes a DevOps toolchain that is preconfigured for continuous delivery, source control, issue tracking, online editing. 
 
